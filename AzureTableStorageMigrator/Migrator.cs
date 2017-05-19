@@ -59,7 +59,7 @@ namespace AzureTableStorageMigrator
             var syntax = new MigratorSyntax(_tableClient);
 
             syntax.Insert("versionData",
-                new VersionData {PartitionKey = "versionData", RowKey = "", Version = version, VersionReadable = versionReadable},
+                new VersionData {PartitionKey = "versionData", RowKey = DateTime.UtcNow.Ticks.ToString(), Version = version, VersionReadable = versionReadable},
                 true);
         }
     }
@@ -85,6 +85,16 @@ namespace AzureTableStorageMigrator
 
             if (createIfNotExists) table.CreateIfNotExists();
             table.Execute(op);
+        }
+
+        /// <summary>
+        /// Deletes a table if exists
+        /// </summary>
+        /// <param name="tableName"></param>
+        public void DeleteTable(string tableName)
+        {
+            var table = _tableClient.GetTableReference(tableName);
+            table.DeleteIfExists();
         }
     }
 }

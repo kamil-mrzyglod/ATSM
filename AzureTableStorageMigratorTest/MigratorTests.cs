@@ -37,7 +37,7 @@ namespace AzureTableStorageMigratorTest
                 var entity = new DummyEntity {PartitionKey = "dummy", RowKey = rowKey, Name = "dummy"};
 
                 _.Insert("dummy", entity, true);
-            });
+            }, 1, "1.0");
             
             var query = new TableQuery<DummyEntity>().Where(
                 TableQuery.CombineFilters(

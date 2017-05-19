@@ -46,10 +46,21 @@ namespace AzureTableStorageMigrator
         /// <summary>
         /// Lets you create a new migration chaining available operations
         /// </summary>
-        public Migrator CreateMigration(Action<MigratorSyntax> syntax)
+        public Migrator CreateMigration(Action<MigratorSyntax> syntax, int version, string versionReadable)
         {
             syntax(new MigratorSyntax(TableClient));
+            SaveMigrationData(version, versionReadable);
+
             return this;
+        }
+
+        private void SaveMigrationData(int version, string versionReadable)
+        {
+            var syntax = new MigratorSyntax(_tableClient);
+
+            syntax.Insert("versionData",
+                new VersionData {PartitionKey = "versionData", RowKey = "", Version = version, VersionReadable = versionReadable},
+                true);
         }
     }
 
@@ -73,7 +84,6 @@ namespace AzureTableStorageMigrator
             var op = TableOperation.Insert(entity);
 
             if (createIfNotExists) table.CreateIfNotExists();
-
             table.Execute(op);
         }
     }

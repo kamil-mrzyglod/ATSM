@@ -68,6 +68,24 @@ namespace AzureTableStorageMigratorTest
             table.Exists().Should().BeFalse("It has been deleted in this run.");
         }
 
+        [Test]
+        public void MigratorTests_WhenTableCreationIsOrdered_ThenItShouldBeCreatedIfNotExist()
+        {
+            // Arrange
+            var tableName = "tableToCreate";
+            var table = _tableClient.GetTableReference(tableName);
+
+            // Act
+            table.CreateIfNotExists();
+            _migrator.CreateMigration(_ =>
+            {
+                _.CreateTable(tableName);
+            }, 1, "1.0");
+
+            // Assert
+            table.Exists().Should().BeTrue("It has been created in this run.");
+        }
+
         public class DummyEntity : TableEntity
         {
             public string Name { get; set; }

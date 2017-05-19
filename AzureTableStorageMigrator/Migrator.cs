@@ -90,11 +90,19 @@ namespace AzureTableStorageMigrator
         /// <summary>
         /// Deletes a table if exists
         /// </summary>
-        /// <param name="tableName"></param>
         public void DeleteTable(string tableName)
         {
             var table = _tableClient.GetTableReference(tableName);
             table.DeleteIfExists();
+        }
+
+        /// <summary>
+        /// Creates a table if doesn't exist
+        /// </summary>
+        public void CreateTable(string tableName)
+        {
+            var table = _tableClient.GetTableReference(tableName);
+            table.CreateIfNotExists();
         }
     }
 }

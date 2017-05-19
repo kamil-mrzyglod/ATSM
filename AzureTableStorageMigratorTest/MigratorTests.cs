@@ -27,14 +27,17 @@ namespace AzureTableStorageMigratorTest
         [Test]
         public void MigratorTests_WhenInsertIsUsedWithAValidTableNameWhichDoesNotExistsAndShouldBeCreated_ThenPassedEntityIsCreated()
         {
-            // Arrange
+            // Arrange    
             var rowKey = DateTime.Now.Ticks.ToString();
-            var entity = new DummyEntity {PartitionKey = "dummy", RowKey = rowKey, Name = "dummy"};
             var table = _tableClient.GetTableReference("dummy");
-            table.DeleteIfExists();
 
             // Act
-            _migrator.Insert("dummy", entity, true);
+            _migrator.CreateMigration(_ =>
+            {
+                var entity = new DummyEntity {PartitionKey = "dummy", RowKey = rowKey, Name = "dummy"};
+
+                _.Insert("dummy", entity, true);
+            });
             
             var query = new TableQuery<DummyEntity>().Where(
                 TableQuery.CombineFilters(

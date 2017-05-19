@@ -1,4 +1,5 @@
-﻿using System.Configuration;
+﻿using System;
+using System.Configuration;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 
@@ -43,17 +44,37 @@ namespace AzureTableStorageMigrator
         private CloudTableClient TableClient => _tableClient ?? (_tableClient = _cloudStorage.CreateCloudTableClient());
 
         /// <summary>
+        /// Lets you create a new migration chaining available operations
+        /// </summary>
+        public Migrator CreateMigration(Action<MigratorSyntax> syntax)
+        {
+            syntax(new MigratorSyntax(TableClient));
+            return this;
+        }
+    }
+
+    public class MigratorSyntax
+    {
+        private readonly CloudTableClient _tableClient;
+
+        internal MigratorSyntax() {}
+
+        internal MigratorSyntax(CloudTableClient tableClient)
+        {
+            _tableClient = tableClient;
+        }
+
+        /// <summary>
         /// Inserts an entity using an 'Insert' operation.
         /// </summary>
-        public Migrator Insert<T>(string tableName, T entity, bool createIfNotExists = false) where T : TableEntity
+        public void Insert<T>(string tableName, T entity, bool createIfNotExists = false) where T : TableEntity
         {
-            var table = TableClient.GetTableReference(tableName);
+            var table = _tableClient.GetTableReference(tableName);
             var op = TableOperation.Insert(entity);
 
             if (createIfNotExists) table.CreateIfNotExists();
 
             table.Execute(op);
-            return this;
         }
     }
 }

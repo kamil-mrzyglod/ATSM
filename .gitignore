@@ -1,0 +1,9 @@
+*.suo
+AzureTableStorageMigrator/obj/
+AzureTableStorageMigrator/bin/
+AzureTableStorageMigrator.sln.DotSettings.user
+AzureTableStorageMigratorTest/bin/
+AzureTableStorageMigratorTest/obj/
+packages/
+AzureTableStorageMigratorTest/App.config
+*.user

@@ -37,7 +37,7 @@ namespace AzureTableStorageMigratorTest
                 var entity = new DummyEntity {PartitionKey = "dummy", RowKey = rowKey, Name = "dummy"};
 
                 _.Insert("dummy", entity, true);
-            }, 1, "1.0");
+            }, 1, "1.0", "MigratorTests_WhenInsertIsUsedWithAValidTableNameWhichDoesNotExistsAndShouldBeCreated_ThenPassedEntityIsCreated");
             
             var query = new TableQuery<DummyEntity>().Where(
                 TableQuery.CombineFilters(
@@ -62,7 +62,7 @@ namespace AzureTableStorageMigratorTest
             _migrator.CreateMigration(_ =>
             {
                 _.DeleteTable(tableName);
-            }, 1, "1.0");
+            }, 1, "1.0", "MigratorTests_WhenTableDeletionIsOrdered_ThenItShouldBeDeletedIfExists");
 
             // Assert
             table.Exists().Should().BeFalse("It has been deleted in this run.");
@@ -80,7 +80,7 @@ namespace AzureTableStorageMigratorTest
             _migrator.CreateMigration(_ =>
             {
                 _.CreateTable(tableName);
-            }, 1, "1.0");
+            }, 1, "1.0", "MigratorTests_WhenTableCreationIsOrdered_ThenItShouldBeCreatedIfNotExist");
 
             // Assert
             table.Exists().Should().BeTrue("It has been created in this run.");
@@ -114,7 +114,7 @@ namespace AzureTableStorageMigratorTest
             _migrator.CreateMigration(_ =>
             {
                 _.RenameTable<DummyEntity>(originTable, destinationTable);
-            }, 1, "1.1");
+            }, 1, "1.1", "MigratorTests_WhenRenameTableIsOrdered_ThenNewTableShouldBeCreatedAndDataMoved");
 
             var query = new TableQuery<DummyEntity>();
             var result = destinationTableRef.ExecuteQuery(query);

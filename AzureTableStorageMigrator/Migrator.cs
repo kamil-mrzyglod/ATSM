@@ -46,20 +46,27 @@ namespace AzureTableStorageMigrator
         /// <summary>
         /// Lets you create a new migration chaining available operations
         /// </summary>
-        public Migrator CreateMigration(Action<MigratorSyntax> syntax, int version, string versionReadable)
+        public Migrator CreateMigration(Action<MigratorSyntax> syntax, int version, string versionReadable, string description)
         {
             syntax(new MigratorSyntax(TableClient));
-            SaveMigrationData(version, versionReadable);
+            SaveMigrationData(version, versionReadable, description);
 
             return this;
         }
 
-        private void SaveMigrationData(int version, string versionReadable)
+        private void SaveMigrationData(int version, string versionReadable, string description)
         {
             var syntax = new MigratorSyntax(_tableClient);
 
             syntax.Insert("versionData",
-                new VersionData {PartitionKey = "versionData", RowKey = DateTime.UtcNow.Ticks.ToString(), Version = version, VersionReadable = versionReadable},
+                new VersionData
+                {
+                    PartitionKey = "versionData",
+                    RowKey = DateTime.UtcNow.Ticks.ToString(),
+                    Version = version,
+                    VersionReadable = versionReadable,
+                    Description = description
+                },
                 true);
         }
     }

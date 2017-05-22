@@ -86,6 +86,45 @@ namespace AzureTableStorageMigratorTest
             table.Exists().Should().BeTrue("It has been created in this run.");
         }
 
+        [Test]
+        public void MigratorTests_WhenRenameTableIsOrdered_ThenNewTableShouldBeCreatedAndDataMoved()
+        {
+            // Arrange
+            var originTable = "origin";
+            var destinationTable = "destination";
+            var originTableRef = _tableClient.GetTableReference(originTable);
+            var destinationTableRef = _tableClient.GetTableReference(destinationTable);
+            originTableRef.DeleteIfExists();
+            destinationTableRef.DeleteIfExists();
+            originTableRef.CreateIfNotExists();
+
+            for (var i = 0; i < 1000; i++)
+            {
+                var op = TableOperation.Insert(new DummyEntity()
+                {
+                    Name = $"Foo{i}",
+                    PartitionKey = "dummy",
+                    RowKey = DateTime.UtcNow.Ticks.ToString()
+                });
+
+                originTableRef.Execute(op);
+            }
+
+            // Act
+            _migrator.CreateMigration(_ =>
+            {
+                _.RenameTable<DummyEntity>(originTable, destinationTable);
+            }, 1, "1.1");
+
+            var query = new TableQuery<DummyEntity>();
+            var result = destinationTableRef.ExecuteQuery(query);
+
+            // Assert
+            originTableRef.Exists().Should().BeTrue("It shouldn't be deleted after renaming.");
+            destinationTableRef.Exists().Should().BeTrue("It should be created after renaming.");
+            result.Count().Should().Be(1000, "1000 items were in the origin table");
+        }
+
         public class DummyEntity : TableEntity
         {
             public string Name { get; set; }

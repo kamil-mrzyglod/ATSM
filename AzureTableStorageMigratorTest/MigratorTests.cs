@@ -125,6 +125,29 @@ namespace AzureTableStorageMigratorTest
             result.Count().Should().Be(1000, "1000 items were in the origin table");
         }
 
+        [Test]
+        public void MigratorTests_WhenAnEntityIsDeleted_ItIsNoLongerInATable()
+        {
+            // Arrange
+            var tableName = "deleting";
+            var entity = new DummyEntity {PartitionKey = "PK", RowKey = "RK", ETag = "*"};
+            var tableRef = _tableClient.GetTableReference(tableName);
+            tableRef.CreateIfNotExists();
+            var op = TableOperation.Insert(entity);
+            tableRef.Execute(op);
+
+            // Act
+            _migrator.CreateMigration(_ =>
+            {
+                _.Delete(tableName, entity);
+            }, 1, "1.2", "MigratorTests_WhenAnEntityIsDeleted_ItIsNoLongerInATable");
+
+            // Assert
+            var query = new TableQuery<DummyEntity>();
+            var result = tableRef.ExecuteQuery(query);
+            result.FirstOrDefault(e => e.RowKey == "PK").Should().BeNull("this entity was deleted.");
+        }
+
         public class DummyEntity : TableEntity
         {
             public string Name { get; set; }

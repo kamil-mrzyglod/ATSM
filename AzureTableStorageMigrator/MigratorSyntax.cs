@@ -89,5 +89,24 @@ namespace AzureTableStorageMigrator
                 table.Execute(op);
             }         
         }
+
+        /// <summary>
+        /// Deletes all entities from a table which have
+        /// a specific partition key and a row key
+        /// </summary>
+        public void Delete(string tableName, string partitionKey, string rowKey)
+        {
+            var table = _tableClient.GetTableReference(tableName);
+            var query = new TableQuery().Where(
+                TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, partitionKey),
+                    TableOperators.And, TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, rowKey)));
+
+            foreach (var entity in table.ExecuteQuery(query))
+            {
+                var op = TableOperation.Delete(entity);
+                table.Execute(op);
+            }
+        }
     }
 }

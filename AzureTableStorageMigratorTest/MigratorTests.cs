@@ -175,6 +175,37 @@ namespace AzureTableStorageMigratorTest
             result.FirstOrDefault(e => e.PartitionKey == "PK2").Should().NotBeNull("this entity has a diferent PK.");
         }
 
+        [Test]
+        public void MigratorTests_WhenAnEntityWithASpecificPartitionKeyAndARowKeyIsDeleted_ItIsNoLongerInATable()
+        {
+            // Arrange
+            var tableName = "deleting3";
+            var entity = new DummyEntity { PartitionKey = "PK", RowKey = "RK", ETag = "*" };
+            var entity2 = new DummyEntity { PartitionKey = "PK2", RowKey = "RK2", ETag = "*" };
+            var entity3 = new DummyEntity { PartitionKey = "PK3", RowKey = "RK3", ETag = "*" };
+            var tableRef = _tableClient.GetTableReference(tableName);
+            tableRef.CreateIfNotExists();
+            var op = TableOperation.Insert(entity);
+            var op2 = TableOperation.Insert(entity2);
+            var op3 = TableOperation.Insert(entity3);
+            tableRef.Execute(op);
+            tableRef.Execute(op2);
+            tableRef.Execute(op3);
+
+            // Act
+            _migrator.CreateMigration(_ =>
+            {
+                _.Delete(tableName, "PK", "RK");
+            }, 1, "1.3", "MigratorTests_WhenAnEntityWithASpecificPartitionKeyAndARowKeyIsDeleted_ItIsNoLongerInATable");
+
+            // Assert
+            var query = new TableQuery<DummyEntity>();
+            var result = tableRef.ExecuteQuery(query).ToList();
+            result.FirstOrDefault(e => e.PartitionKey == "PK" && e.RowKey == "RK").Should().BeNull("this entity was deleted.");
+            result.FirstOrDefault(e => e.PartitionKey == "PK2" && e.RowKey == "RK2").Should().NotBeNull("this entity has a diferent PK and RK.");
+            result.FirstOrDefault(e => e.PartitionKey == "PK3" && e.RowKey == "RK3").Should().NotBeNull("this entity has a diferent PK and RK.");
+        }
+
         public class DummyEntity : TableEntity
         {
             public string Name { get; set; }

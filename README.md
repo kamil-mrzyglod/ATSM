@@ -4,6 +4,9 @@ Azure Table Storage Migrator
 ## Why?
 Because even a simple key-value database likes to be versioned.
 
+## Installation
+`PM> Install-Package AzureTableStorageMigrator`
+
 ## Project
 ATSM gives you a simple API, which you can use in your project to decorate each change in Azure Table Storage. What is more, it lets you to actually change the schema of tables and move data. You can create a migration using a following method available in `Migrator` type:
 

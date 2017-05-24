@@ -24,6 +24,9 @@ For now following methods are available:
 * `void Delete(string tableName, string partitionKey, string rowKey)`
 * `void Clear(string tableName)`
 
+## Metadata
+Each migration leaves a metadata record in the `versionData` table, which will be created in your storage account. Be aware of the fact, that ATSM uses this table internally to decide which migration should be run - you can take advantage of this information if something goes wrong.
+
 ## Usage
 ```
 var migrator = new Migrator();

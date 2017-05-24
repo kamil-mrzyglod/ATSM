@@ -248,13 +248,41 @@ namespace AzureTableStorageMigratorTest
             // Arrange
 
             // Act
-            void Act() => _migrator.CreateMigration(_ => { _.CreateTable("duplicated1"); }, 1, "1.0",
+            void Act() => _migrator.CreateMigration(_ => { _.CreateTable("duplicated1"); }, 9, "1.0",
                     "MigratorTests_WhenDuplicatedMigrationIdIsUsed_ThenMigratorIsStopped")
-                .CreateMigration(_ => { _.CreateTable("duplicated2"); }, 1, "1.1",
+                .CreateMigration(_ => { _.CreateTable("duplicated2"); }, 9, "1.1",
                     "MigratorTests_WhenDuplicatedMigrationIdIsUsed_ThenMigratorIsStopped");
 
             // Assert
             Assert.Throws<DuplicatedMigrationException>(Act);
+        }
+
+        [Test]
+        public void MigratorTests_WhenAComplexMigrationIsCalled_ThenItIsExecutedFlawlessly()
+        {
+            // Arrange
+            var table1 = _tableClient.GetTableReference("complex1");
+            var table2 = _tableClient.GetTableReference("complex2");
+
+            // Act
+            _migrator.CreateMigration(_ =>
+            {
+                _.CreateTable("complex1");
+                _.CreateTable("complex2");
+                _.Insert("complex1", new DummyEntity { PartitionKey = "complex", RowKey = DateTime.UtcNow.Ticks.ToString(), Name = "foo"});
+                _.Insert("complex1", new DummyEntity { PartitionKey = "complex", RowKey = DateTime.UtcNow.Ticks.ToString(), Name = "foo2"});
+                _.Insert("complex2", new DummyEntity { PartitionKey = "complex", RowKey = DateTime.UtcNow.Ticks.ToString(), Name = "foo"});
+            }, 11, "1.11", "MigratorTests_WhenAComplexMigrationIsCalled_ThenItIsExecutedFlawlessly");
+
+            var query = new TableQuery();
+            var result1 = table1.ExecuteQuery(query);
+            var result2 = table2.ExecuteQuery(query);
+
+            // Assert
+            table1.Exists().Should().BeTrue("we created it in our migration");
+            table2.Exists().Should().BeTrue("we created it in our migration");
+            result1.Count().Should().Be(2, "we added 2 entities");
+            result2.Count().Should().Be(1, "we added 1 entity");
         }
 
         public class DummyEntity : TableEntity

@@ -184,6 +184,7 @@ namespace AzureTableStorageMigratorTest
             var entity2 = new DummyEntity { PartitionKey = "PK2", RowKey = "RK2", ETag = "*" };
             var entity3 = new DummyEntity { PartitionKey = "PK3", RowKey = "RK3", ETag = "*" };
             var tableRef = _tableClient.GetTableReference(tableName);
+            tableRef.DeleteIfExists();
             tableRef.CreateIfNotExists();
             var op = TableOperation.Insert(entity);
             var op2 = TableOperation.Insert(entity2);
@@ -204,6 +205,39 @@ namespace AzureTableStorageMigratorTest
             result.FirstOrDefault(e => e.PartitionKey == "PK" && e.RowKey == "RK").Should().BeNull("this entity was deleted.");
             result.FirstOrDefault(e => e.PartitionKey == "PK2" && e.RowKey == "RK2").Should().NotBeNull("this entity has a diferent PK and RK.");
             result.FirstOrDefault(e => e.PartitionKey == "PK3" && e.RowKey == "RK3").Should().NotBeNull("this entity has a diferent PK and RK.");
+        }
+
+        [Test]
+        public void MigratorTests_WhenTableIsCleared_ThenNoRowIsInsideIt()
+        {
+            // Arrange
+            var tableName = "clearing";
+            var table = _tableClient.GetTableReference(tableName);
+            table.CreateIfNotExists();
+
+            for (var i = 0; i < 100; i++)
+            {
+                var op = TableOperation.Insert(new DummyEntity
+                {
+                    PartitionKey = "clearing",
+                    RowKey = DateTime.UtcNow.Ticks.ToString(),
+                    Name = i.ToString()
+                });
+
+                table.Execute(op);
+            }
+
+            // Act
+            _migrator.CreateMigration(_ =>
+            {
+                _.Clear(tableName);
+            }, 1, "1.4", "MigratorTests_WhenTableIsCleared_ThenNoRowIsInsideIt");
+
+            var query = new TableQuery();
+            var result = table.ExecuteQuery(query);
+
+            // Assert
+            result.Count().Should().Be(0, "we just cleared all records");
         }
 
         public class DummyEntity : TableEntity

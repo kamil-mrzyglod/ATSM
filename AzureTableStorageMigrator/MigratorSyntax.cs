@@ -108,5 +108,22 @@ namespace AzureTableStorageMigrator
                 table.Execute(op);
             }
         }
+
+        /// <summary>
+        /// Deletes all rows from a table. Useful especially
+        /// if you don't want to wait for a table to be
+        /// garbage collected.
+        /// </summary>
+        public void Clear(string tableName)
+        {
+            var table = _tableClient.GetTableReference(tableName);
+            var query = new TableQuery();
+
+            foreach (var entity in table.ExecuteQuery(query))
+            {
+                var op = TableOperation.Delete(entity);
+                table.Execute(op);
+            }
+        }
     }
 }

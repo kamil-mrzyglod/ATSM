@@ -62,7 +62,7 @@ namespace AzureTableStorageMigratorTest
             _migrator.CreateMigration(_ =>
             {
                 _.DeleteTable(tableName);
-            }, 1, "1.0", "MigratorTests_WhenTableDeletionIsOrdered_ThenItShouldBeDeletedIfExists");
+            }, 2, "1.0", "MigratorTests_WhenTableDeletionIsOrdered_ThenItShouldBeDeletedIfExists");
 
             // Assert
             table.Exists().Should().BeFalse("It has been deleted in this run.");
@@ -80,7 +80,7 @@ namespace AzureTableStorageMigratorTest
             _migrator.CreateMigration(_ =>
             {
                 _.CreateTable(tableName);
-            }, 1, "1.0", "MigratorTests_WhenTableCreationIsOrdered_ThenItShouldBeCreatedIfNotExist");
+            }, 3, "1.0", "MigratorTests_WhenTableCreationIsOrdered_ThenItShouldBeCreatedIfNotExist");
 
             // Assert
             table.Exists().Should().BeTrue("It has been created in this run.");
@@ -114,7 +114,7 @@ namespace AzureTableStorageMigratorTest
             _migrator.CreateMigration(_ =>
             {
                 _.RenameTable<DummyEntity>(originTable, destinationTable);
-            }, 1, "1.1", "MigratorTests_WhenRenameTableIsOrdered_ThenNewTableShouldBeCreatedAndDataMoved");
+            }, 4, "1.1", "MigratorTests_WhenRenameTableIsOrdered_ThenNewTableShouldBeCreatedAndDataMoved");
 
             var query = new TableQuery<DummyEntity>();
             var result = destinationTableRef.ExecuteQuery(query);
@@ -132,6 +132,7 @@ namespace AzureTableStorageMigratorTest
             var tableName = "deleting";
             var entity = new DummyEntity {PartitionKey = "PK", RowKey = "RK", ETag = "*"};
             var tableRef = _tableClient.GetTableReference(tableName);
+            tableRef.DeleteIfExists();
             tableRef.CreateIfNotExists();
             var op = TableOperation.Insert(entity);
             tableRef.Execute(op);
@@ -140,7 +141,7 @@ namespace AzureTableStorageMigratorTest
             _migrator.CreateMigration(_ =>
             {
                 _.Delete(tableName, entity);
-            }, 1, "1.2", "MigratorTests_WhenAnEntityIsDeleted_ItIsNoLongerInATable");
+            }, 5, "1.2", "MigratorTests_WhenAnEntityIsDeleted_ItIsNoLongerInATable");
 
             // Assert
             var query = new TableQuery<DummyEntity>();
@@ -156,6 +157,7 @@ namespace AzureTableStorageMigratorTest
             var entity = new DummyEntity { PartitionKey = "PK", RowKey = "RK", ETag = "*" };
             var entity2 = new DummyEntity { PartitionKey = "PK2", RowKey = DateTime.UtcNow.Ticks.ToString(), ETag = "*" };
             var tableRef = _tableClient.GetTableReference(tableName);
+            tableRef.DeleteIfExists();
             tableRef.CreateIfNotExists();
             var op = TableOperation.Insert(entity);
             var op2 = TableOperation.Insert(entity2);
@@ -166,7 +168,7 @@ namespace AzureTableStorageMigratorTest
             _migrator.CreateMigration(_ =>
             {
                 _.Delete(tableName, "PK");
-            }, 1, "1.2", "MigratorTests_WhenAnEntityWithASpecificPartitionKeyIsDeleted_ItIsNoLongerInATable");
+            }, 6, "1.2", "MigratorTests_WhenAnEntityWithASpecificPartitionKeyIsDeleted_ItIsNoLongerInATable");
 
             // Assert
             var query = new TableQuery<DummyEntity>();
@@ -197,7 +199,7 @@ namespace AzureTableStorageMigratorTest
             _migrator.CreateMigration(_ =>
             {
                 _.Delete(tableName, "PK", "RK");
-            }, 1, "1.3", "MigratorTests_WhenAnEntityWithASpecificPartitionKeyAndARowKeyIsDeleted_ItIsNoLongerInATable");
+            }, 7, "1.3", "MigratorTests_WhenAnEntityWithASpecificPartitionKeyAndARowKeyIsDeleted_ItIsNoLongerInATable");
 
             // Assert
             var query = new TableQuery<DummyEntity>();
@@ -231,13 +233,28 @@ namespace AzureTableStorageMigratorTest
             _migrator.CreateMigration(_ =>
             {
                 _.Clear(tableName);
-            }, 1, "1.4", "MigratorTests_WhenTableIsCleared_ThenNoRowIsInsideIt");
+            }, 8, "1.4", "MigratorTests_WhenTableIsCleared_ThenNoRowIsInsideIt");
 
             var query = new TableQuery();
             var result = table.ExecuteQuery(query);
 
             // Assert
             result.Count().Should().Be(0, "we just cleared all records");
+        }
+
+        [Test]
+        public void MigratorTests_WhenDuplicatedMigrationIdIsUsed_ThenMigratorIsStopped()
+        {
+            // Arrange
+
+            // Act
+            void Act() => _migrator.CreateMigration(_ => { _.CreateTable("duplicated1"); }, 1, "1.0",
+                    "MigratorTests_WhenDuplicatedMigrationIdIsUsed_ThenMigratorIsStopped")
+                .CreateMigration(_ => { _.CreateTable("duplicated2"); }, 1, "1.1",
+                    "MigratorTests_WhenDuplicatedMigrationIdIsUsed_ThenMigratorIsStopped");
+
+            // Assert
+            Assert.Throws<DuplicatedMigrationException>(Act);
         }
 
         public class DummyEntity : TableEntity

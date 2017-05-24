@@ -1,12 +1,13 @@
-﻿using Microsoft.WindowsAzure.Storage.Table;
+﻿using System;
+using Microsoft.WindowsAzure.Storage.Table;
 
 namespace AzureTableStorageMigrator
 {
     internal class VersionData : TableEntity
     {
-        public int Version { get; set; }
+        public string Version { get; set; }
 
-        public string VersionReadable { get; set; }
+        public DateTime Timestamp { get; set; }
 
         public string Description { get; set; }
     }

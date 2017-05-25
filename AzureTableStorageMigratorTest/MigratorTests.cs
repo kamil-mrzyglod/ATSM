@@ -342,6 +342,22 @@ namespace AzureTableStorageMigratorTest
             result.All(e => string.IsNullOrEmpty(e.Dummy)).Should().BeTrue("we just changed the type of a table");
         }
 
+        [Test]
+        public void MigratorTests_WhenInvalidTypeIsUsedForDeletingAColumn_ThenMigratorIsStopped()
+        {
+            // Arrange
+            var tableName = "deletingColumn2";
+
+            // Act
+            void Act() => _migrator.CreateMigration(_ =>
+            {
+                _.DeleteColumn<DummyEntity, DummyEntityWithAColumn>(tableName);
+            }, 13, "1.13", "MigratorTests_WhenInvalidTypeIsUsedForDeletingAColumn_ThenMigratorIsStopped");
+
+            // Assert
+            Assert.Throws<InvalidOperationException>(Act);
+        }
+
         public class DummyEntity : TableEntity
         {
             public DummyEntity()

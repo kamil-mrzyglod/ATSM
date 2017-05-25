@@ -113,7 +113,7 @@ namespace AzureTableStorageMigratorTest
             // Act
             _migrator.CreateMigration(_ =>
             {
-                _.RenameTable<DummyEntity>(originTable, destinationTable);
+                _.RenameTable(originTable, destinationTable);
             }, 4, "1.1", "MigratorTests_WhenRenameTableIsOrdered_ThenNewTableShouldBeCreatedAndDataMoved");
 
             var query = new TableQuery<DummyEntity>();
@@ -285,9 +285,80 @@ namespace AzureTableStorageMigratorTest
             result2.Count().Should().Be(1, "we added 1 entity");
         }
 
+        [Test]
+        public void MigratorTests_WhenADeleteColumnIsCalledWithProperParameters_ThenAColumnShouldNoLongerBeInATable()
+        {
+            // Arrange
+            var tableName = "deletingColumn";
+            var tableNameTemp = "deletingColumnTEMP";
+            var tableRef = _tableClient.GetTableReference(tableName);
+            var tableTempRef = _tableClient.GetTableReference(tableName);
+            tableRef.DeleteIfExists();
+            tableTempRef.DeleteIfExists();
+            tableRef.CreateIfNotExists();
+            var op = TableOperation.Insert(new DummyEntityWithAColumn
+            {
+                PartitionKey = "dummy",
+                RowKey = DateTime.UtcNow.Ticks.ToString(),
+                Name = "Entity1",
+                Dummy = "HAHA"
+            });
+            var op2 = TableOperation.Insert(new DummyEntityWithAColumn
+            {
+                PartitionKey = "dummy2",
+                RowKey = DateTime.UtcNow.Ticks.ToString(),
+                Name = "Entity2",
+                Dummy = "HOHO"
+            });
+            var op3 = TableOperation.Insert(new DummyEntityWithAColumn
+            {
+                PartitionKey = "dummy3",
+                RowKey = DateTime.UtcNow.Ticks.ToString(),
+                Name = "Entity3",
+                Dummy = "HIHI"
+            });
+
+            tableRef.Execute(op);
+            tableRef.Execute(op2);
+            tableRef.Execute(op3);
+
+            // Act
+            _migrator.CreateMigration(_ =>
+            {
+                _.DeleteColumn<DummyEntityWithAColumn, DummyEntity>(tableName);
+            }, 12, "1.12", "MigratorTests_WhenADeleteColumnIsCalledWithProperParameters_ThenAColumnShouldNoLongerBeInATable");
+
+            var query = new TableQuery<DummyEntityWithAColumn>();
+            var result = tableRef.ExecuteQuery(query).ToList();
+
+            // Assert
+            tableRef.Exists().Should().BeTrue("deleting a column mustn't affect a table");
+            tableTempRef.Exists().Should().BeFalse("temporary table shouldn't exist after a migration");
+            result.Count.Should().Be(3, "we had 3 entities in the table");
+            result.All(e => string.IsNullOrEmpty(e.Dummy)).Should().BeTrue("we just changed the type of a table");
+        }
+
         public class DummyEntity : TableEntity
         {
+            public DummyEntity()
+            {
+            }
+
+            public DummyEntity(DummyEntityWithAColumn entity)
+            {
+                PartitionKey = entity.PartitionKey;
+                RowKey = entity.RowKey;
+                Name = entity.Name;
+            }
+
             public string Name { get; set; }
+        }
+
+        public class DummyEntityWithAColumn : TableEntity
+        {
+            public string Name { get; set; }
+
+            public string Dummy { get; set; }
         }
     }
 }

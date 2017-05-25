@@ -22,6 +22,8 @@ namespace AzureTableStorageMigratorTest
             var cloudStorage = CloudStorageAccount.Parse(
                 ConfigurationManager.AppSettings["StorageConnectionString"]);
             _tableClient = cloudStorage.CreateCloudTableClient();
+
+            _tableClient.GetTableReference("versionData").DeleteIfExists();
         }
 
         [Test]
@@ -262,7 +264,9 @@ namespace AzureTableStorageMigratorTest
         {
             // Arrange
             var table1 = _tableClient.GetTableReference("complex1");
+            table1.DeleteIfExists();
             var table2 = _tableClient.GetTableReference("complex2");
+            table2.DeleteIfExists();
 
             // Act
             _migrator.CreateMigration(_ =>
@@ -292,7 +296,7 @@ namespace AzureTableStorageMigratorTest
             var tableName = "deletingColumn";
             var tableNameTemp = "deletingColumnTEMP";
             var tableRef = _tableClient.GetTableReference(tableName);
-            var tableTempRef = _tableClient.GetTableReference(tableName);
+            var tableTempRef = _tableClient.GetTableReference(tableNameTemp);
             tableRef.DeleteIfExists();
             tableTempRef.DeleteIfExists();
             tableRef.CreateIfNotExists();
